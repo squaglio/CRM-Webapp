@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 {
   "version": 2,
   "buildCommand": "npm run build",
   "cleanUrls": true
+=======
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "cleanUrls": true
+>>>>>>> 4d45776de45dca6264f018d8fc4aa06577b1000d
 } 
