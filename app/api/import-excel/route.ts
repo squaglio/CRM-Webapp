@@ -39,6 +39,11 @@ export async function POST(request: Request) {
       }
     }
 
+    // Ensure we have valid sheets to process
+    if (!sheetsToProcess || sheetsToProcess.length === 0) {
+      sheetsToProcess = workbook.SheetNames;
+    }
+
     // Process the sheets
     sheetsToProcess.forEach((sheetName: string) => {
       if (workbook.SheetNames.includes(sheetName)) {

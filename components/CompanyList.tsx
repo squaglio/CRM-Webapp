@@ -1,5 +1,5 @@
-import { Company } from '../types';
 import { useState } from 'react';
+import type { Company, CompanyData } from '@/app/types/index';
 
 interface CompanyListProps {
   companies: Company[];
@@ -7,15 +7,19 @@ interface CompanyListProps {
   onDelete: (id: string) => void;
   onUpdateDate: (id: string, date: string) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateField: (id: string, field: string, value: string) => void;
 }
 
-export default function CompanyList({ companies, onEdit, onDelete, onUpdateDate, onUpdateNotes }: CompanyListProps) {
+export default function CompanyList({ companies, onEdit, onDelete, onUpdateDate, onUpdateNotes, onUpdateField }: CompanyListProps) {
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [tempDate, setTempDate] = useState<string>('');
+  const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
+  const [tempValue, setTempValue] = useState<string>('');
 
   const handleDateClick = (company: Company) => {
     setEditingDateId(company.id);
-    setTempDate(company.data['Last Contact Date'] || '');
+    const companyWithData = company as Company & { data?: CompanyData };
+    setTempDate(companyWithData.data?.['Last Contact Date'] || '');
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +45,31 @@ export default function CompanyList({ companies, onEdit, onDelete, onUpdateDate,
     onUpdateNotes(company.id, e.target.value);
   };
 
+  const handleFieldEdit = (company: Company, field: string) => {
+    const companyWithData = company as Company & { data?: CompanyData };
+    setEditingField({ id: company.id, field });
+    setTempValue(companyWithData.data?.[field] || '');
+  };
+
+  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTempValue(e.target.value);
+  };
+
+  const handleFieldSubmit = () => {
+    if (editingField && tempValue !== null) {
+      onUpdateField(editingField.id, editingField.field, tempValue);
+    }
+    setEditingField(null);
+  };
+
+  const handleFieldKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleFieldSubmit();
+    } else if (e.key === 'Escape') {
+      setEditingField(null);
+    }
+  };
+
   if (companies.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -51,16 +80,20 @@ export default function CompanyList({ companies, onEdit, onDelete, onUpdateDate,
 
   // Get all unique headers from all companies except Notes and filter out empty columns
   const headers = Array.from(new Set(
-    companies.flatMap(company => Object.keys(company.data))
+    companies.flatMap(company => {
+      const companyWithData = company as Company & { data?: CompanyData };
+      return Object.keys(companyWithData.data || {});
+    })
   ))
   .filter(header => header !== 'Notes')
   .filter(header => 
-    companies.some(company => 
-      company.data[header] && 
-      company.data[header].trim() !== '' && 
-      company.data[header].toLowerCase() !== 'null' &&
-      company.data[header].toLowerCase() !== 'undefined'
-    )
+    companies.some(company => {
+      const companyWithData = company as Company & { data?: CompanyData };
+      return companyWithData.data?.[header] && 
+      companyWithData.data[header].trim() !== '' && 
+      companyWithData.data[header].toLowerCase() !== 'null' &&
+      companyWithData.data[header].toLowerCase() !== 'undefined';
+    })
   );
 
   return (
@@ -111,22 +144,64 @@ export default function CompanyList({ companies, onEdit, onDelete, onUpdateDate,
                         </button>
                       </div>
                     ) : (
-                      <div 
-                        className="text-sm text-gray-900 cursor-pointer hover:text-blue-600"
-                        onClick={() => handleDateClick(company)}
-                      >
-                        {company.data[header] || ''}
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm text-gray-900">
+                          {(company as Company & { data?: CompanyData }).data?.[header] || ''}
+                        </div>
+                        <button 
+                          onClick={() => handleDateClick(company)}
+                          className="opacity-0 group-hover:opacity-100 text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
                       </div>
                     )
+                  ) : editingField && editingField.id === company.id && editingField.field === header ? (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={tempValue}
+                        onChange={handleFieldChange}
+                        onKeyDown={handleFieldKeyDown}
+                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleFieldSubmit}
+                        className="text-sm text-green-600 hover:text-green-900"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => setEditingField(null)}
+                        className="text-sm text-red-600 hover:text-red-900"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ) : (
-                    <div className="text-sm text-gray-900">{company.data[header] || ''}</div>
+                    <div className="flex items-center space-x-2 group">
+                      <div className="text-sm text-gray-900">
+                        {(company as Company & { data?: CompanyData }).data?.[header] || ''}
+                      </div>
+                      <button 
+                        onClick={() => handleFieldEdit(company, header)}
+                        className="opacity-0 group-hover:opacity-100 text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    </div>
                   )}
                 </td>
               ))}
               <td className="px-6 py-4">
                 <div className="relative">
                   <textarea
-                    value={company.data['Notes'] || ''}
+                    value={(company as Company & { data?: CompanyData }).data?.['Notes'] || ''}
                     onChange={(e) => handleNotesChange(e, company)}
                     placeholder="Click to add notes..."
                     className="w-[200px] text-sm border border-gray-300 rounded px-2 py-1 

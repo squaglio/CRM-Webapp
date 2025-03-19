@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { Company } from '@/app/types';
 
 export default function GoogleSheetImport() {
   const [spreadsheetId, setSpreadsheetId] = useState('');

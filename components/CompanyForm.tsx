@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Company } from '../types';
+import type { Company } from '@/app/types';
 
 interface CompanyFormProps {
   company?: Company;
@@ -9,7 +9,7 @@ interface CompanyFormProps {
 }
 
 export default function CompanyForm({ company, onSubmit, onCancel, sections = [] }: CompanyFormProps) {
-  const [formData, setFormData] = useState<{ [key: string]: string }>(
+  const [formData, setFormData] = useState<{ [key: string]: string | undefined }>(
     company?.data || {
       'Company Name': '',
       'Contact Person': '',
